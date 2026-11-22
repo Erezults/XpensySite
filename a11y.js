@@ -23,6 +23,25 @@
     return (document.documentElement.lang || 'he').slice(0, 2) === 'en' ? 'en' : 'he';
   }
 
+  // Opt-in stacked-bilingual mode (<html data-a11y-lang="both">): every label
+  // shows English and Hebrew together, for pages that have no language toggle.
+  function bilingual() {
+    return document.documentElement.getAttribute('data-a11y-lang') === 'both';
+  }
+  function strings() {
+    if (!bilingual()) return STR[lang()];
+    var t = {};
+    Object.keys(STR.en).forEach(function (k) { t[k] = STR.en[k] + ' · ' + STR.he[k]; });
+    return t;
+  }
+  function setLabel(el, key, t) {
+    if (!bilingual()) { el.textContent = t[key]; return; }
+    el.textContent = STR.en[key] + ' · ';
+    var he = document.createElement('span');
+    he.lang = 'he'; he.dir = 'rtl'; he.textContent = STR.he[key];
+    el.appendChild(he);
+  }
+
   function loadState() {
     try {
       var raw = localStorage.getItem(STORAGE_KEY);
@@ -110,7 +129,7 @@
     var a = document.createElement('a');
     a.className = 'a11y-skip-link';
     a.href = '#';
-    a.textContent = t.skip;
+    setLabel(a, 'skip', t);
     a.addEventListener('click', function (e) {
       e.preventDefault();
       var target = skipTarget();
@@ -122,7 +141,7 @@
   }
 
   function buildWidget() {
-    var t = STR[lang()];
+    var t = strings();
     var wrap = document.createElement('div');
     wrap.className = 'a11y-widget';
 
@@ -138,12 +157,12 @@
     panel.setAttribute('role', 'dialog');
 
     function render() {
-      t = STR[lang()];
+      t = strings();
       btn.setAttribute('aria-label', t.toggle);
       panel.innerHTML = '';
 
       var h2 = document.createElement('h2');
-      h2.textContent = t.title;
+      setLabel(h2, 'title', t);
       panel.appendChild(h2);
 
       var row1 = document.createElement('div');
@@ -159,7 +178,7 @@
 
       var contrastBtn = document.createElement('button');
       contrastBtn.type = 'button'; contrastBtn.className = 'a11y-panel-btn';
-      contrastBtn.textContent = t.contrast;
+      setLabel(contrastBtn, 'contrast', t);
       contrastBtn.setAttribute('aria-pressed', String(!!state.contrast));
       contrastBtn.style.display = 'block'; contrastBtn.style.width = '100%'; contrastBtn.style.marginBottom = '8px';
       contrastBtn.addEventListener('click', function () {
@@ -170,7 +189,7 @@
 
       var motionBtn = document.createElement('button');
       motionBtn.type = 'button'; motionBtn.className = 'a11y-panel-btn';
-      motionBtn.textContent = t.motion;
+      setLabel(motionBtn, 'motion', t);
       motionBtn.setAttribute('aria-pressed', String(!!state.noMotion));
       motionBtn.style.display = 'block'; motionBtn.style.width = '100%'; motionBtn.style.marginBottom = '8px';
       motionBtn.addEventListener('click', function () {
@@ -181,7 +200,7 @@
 
       var resetBtn = document.createElement('button');
       resetBtn.type = 'button'; resetBtn.className = 'a11y-panel-btn';
-      resetBtn.textContent = t.reset;
+      setLabel(resetBtn, 'reset', t);
       resetBtn.style.display = 'block'; resetBtn.style.width = '100%';
       resetBtn.addEventListener('click', function () {
         state = { zoom: 0, contrast: false, noMotion: false };
@@ -192,7 +211,7 @@
       var link = document.createElement('a');
       link.className = 'a11y-panel-link';
       link.href = '/accessibility.html';
-      link.textContent = t.statement;
+      setLabel(link, 'statement', t);
       panel.appendChild(link);
     }
     render();
@@ -218,7 +237,7 @@
   function init() {
     injectStyle();
     applyState();
-    buildSkipLink(STR[lang()]);
+    buildSkipLink(strings());
     buildWidget();
   }
 
